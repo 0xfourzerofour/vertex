@@ -1,0 +1,6 @@
+# Service configurations
+services:
+    - 
+        url: "http://service1.com/graphql"
+        ws: "ws://service1.com"
+

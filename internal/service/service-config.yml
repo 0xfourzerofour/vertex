@@ -1,8 +1,9 @@
 services:
     - 
-        url: "graphql.anilist.co"
-        ws: "service1.com"
-    - 
         url: "countries.trevorblades.com"
+        ws: "service1.com"   
+    - 
+        url: "fruits-api.netlify.app"
+        path: "/graphql"
         ws: "service1.com"
 

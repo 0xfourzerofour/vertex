@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/machinebox/graphql"
+	"golang.org/x/oauth2"
+
+	"github.com/shurcooL/graphql"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/parser"
 )
@@ -15,53 +17,37 @@ type HttpQuery struct {
 }
 
 type IntroSpectionResult struct {
-	Data SchemaResult `json:"data"`
-}
-type SchemaResult struct {
-	Schema SchemaTypes `json:"__schema"`
-}
-
-type SchemaTypes struct {
-	Types []TypeData `json:"types"`
-}
-
-type TypeData struct {
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
+	Schema struct {
+		QueryType struct {
+			Fields []struct {
+				Name        string  `graphql:"name"`
+				Description *string `graphql:"description"`
+			}
+		} `graphql:"queryType"`
+	} `graphql:"__schema"`
 }
 
-func GetQueryService(body *[]byte) {
+func GetIntrospectionSchema(url, token string) (*IntroSpectionResult, error) {
 
-	parseQuery(body)
+	src := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	httpClient := oauth2.NewClient(context.Background(), src)
 
-}
-func GetIntrospectionSchema(url string) (*IntroSpectionResult, error) {
+	client := graphql.NewClient(url, httpClient)
 
-	req := graphql.NewRequest(`
-		{
-		  __schema {
-		    types {
-		      name
-		      description
-		    }
-		  }
-		}		
-	`)
+	query := IntroSpectionResult{}
 
-	client := graphql.NewClient(url)
-
-	resp := IntroSpectionResult{}
-
-	err := client.Run(context.Background(), req, &resp)
+	err := client.Query(context.Background(), &query, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &resp, nil
+	return &query, nil
 }
 
-func parseQuery(body *[]byte) {
+func ParseQueryBody(body *[]byte) {
 
 	hq := HttpQuery{}
 
@@ -86,7 +72,7 @@ func parseQuery(body *[]byte) {
 
 		//Directive query or mutation
 
-		log.Printf("%+v", operation.SelectionSet[0])
+		log.Print(operation.SelectionSet[0])
 	}
 
 }

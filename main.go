@@ -20,7 +20,7 @@ func ProxyHandler(ctx *fasthttp.RequestCtx) {
 
 	body := ctx.Request.Body()
 
-	graphql.GetQueryService(&body)
+	graphql.ParseQueryBody(&body)
 
 	proxyServer.ServeHTTP(ctx)
 
@@ -29,7 +29,11 @@ func ProxyHandler(ctx *fasthttp.RequestCtx) {
 func main() {
 	// Load services from config
 
-	service.LoadServices()
+	err := service.LoadServices()
+
+	if err != nil {
+		log.Fatal("Could not load services")
+	}
 
 	// build proxies
 

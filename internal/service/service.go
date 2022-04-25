@@ -18,7 +18,7 @@ type ServiceItem struct {
 	WS  string `json:"ws"`
 }
 
-var services = hashmap.HashMap{}
+var ServiceMap = hashmap.HashMap{}
 
 //go:embed service-config.yml
 var serviceEmbed embed.FS
@@ -41,12 +41,14 @@ func LoadServices() error {
 
 	for _, svc := range cfg.Services {
 
-		svcIntrospection, err := graphql.GetIntrospectionSchema(svc.Url)
-
-		log.Println(*svcIntrospection)
+		svcIntrospection, err := graphql.GetIntrospectionSchema(svc.Url, "TESTTOKEN")
 
 		if err != nil {
 			return errors.New("Could not get introspection schema for " + svc.Url)
+		}
+
+		for _, queryType := range svcIntrospection.Schema.QueryType.Fields {
+			ServiceMap.Insert(queryType.Name, svc.Url)
 		}
 
 	}

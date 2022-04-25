@@ -1,9 +1,6 @@
 # Service configurations
 services:
     - 
-        url: "http://service1.com/graphql"
+        url: "https://anilist.co/graphql"
         ws: "ws://service1.com"
-    - 
-        url: "http://service2.com/graphql"
-        ws: "ws://service2.com"
 

@@ -2,6 +2,8 @@ package service
 
 import (
 	"embed"
+	"errors"
+	"govertex/internal/graphql"
 	"log"
 
 	"github.com/cornelk/hashmap"
@@ -21,7 +23,7 @@ var services = hashmap.HashMap{}
 //go:embed service-config.yml
 var serviceEmbed embed.FS
 
-func LoadServices() {
+func LoadServices() error {
 
 	cfg := Config{}
 
@@ -39,8 +41,16 @@ func LoadServices() {
 
 	for _, svc := range cfg.Services {
 
-		log.Print(svc.Url)
+		svcIntrospection, err := graphql.GetIntrospectionSchema(svc.Url)
+
+		log.Println(*svcIntrospection)
+
+		if err != nil {
+			return errors.New("Could not get introspection schema for " + svc.Url)
+		}
 
 	}
+
+	return nil
 
 }

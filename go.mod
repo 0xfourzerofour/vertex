@@ -12,6 +12,7 @@ require (
 	github.com/graphql-go/graphql v0.8.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.15.0 // indirect
+	github.com/machinebox/graphql v0.2.2 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/savsgio/gotils v0.0.0-20200608150037-a5f6f5aef16c // indirect

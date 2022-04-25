@@ -4,37 +4,4 @@ This Project is inspired by current pitfalls that I have come across at work wit
 Vertex aims to solve this issue by allowing a single graphql endpoint to many downstream services by parsing 
 the query body and matching the query to a service. 
 
-# Test Query 1 #
-
-```
-
-// countries.trevorblades.com
-
-{
-  languages {
-        code
-      }
-    }
-  }
-}
-
-
-```
-
-
-# Test Query 2 #
-
-```
-
-// www.universe.com/graphql
-
-{
-  episodes {
-    info {
-      next
-    }
-  }
-}
-
-```
-
+[![](https://mermaid.ink/img/pako:eNp9j00KwjAQRq8SZt1eIAtB2qgLF9UGFZouQhNtsElKTMHS9u6m_iwEcRbD8L3HMDNAZYUEDBfH2xrRlBkUalkkjZLGlyiOF-OG0iyaWx4d8xElw4HsKTlNLzd5Opmz935EabGeF-225Q9I_sHVF4QItHSaKxFuG-aEga-llgxwGAV3VwbMTMHrWsG9JEJ56wCfeXOTEfDO27w3FWDvOvmRUsXDn_ptTQ8RuVGX)](https://mermaid-js.github.io/mermaid-live-editor/edit#pako:eNp9j00KwjAQRq8SZt1eIAtB2qgLF9UGFZouQhNtsElKTMHS9u6m_iwEcRbD8L3HMDNAZYUEDBfH2xrRlBkUalkkjZLGlyiOF-OG0iyaWx4d8xElw4HsKTlNLzd5Opmz935EabGeF-225Q9I_sHVF4QItHSaKxFuG-aEga-llgxwGAV3VwbMTMHrWsG9JEJ56wCfeXOTEfDO27w3FWDvOvmRUsXDn_ptTQ8RuVGX)

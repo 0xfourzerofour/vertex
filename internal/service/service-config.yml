@@ -2,4 +2,7 @@ services:
     - 
         url: "graphql.anilist.co"
         ws: "service1.com"
+    - 
+        url: "countries.trevorblades.com"
+        ws: "service1.com"
 

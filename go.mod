@@ -6,6 +6,8 @@ require (
 	github.com/agnivade/levenshtein v1.0.1 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/chirino/graphql v0.0.0-20210707003802-dfaf250c773e // indirect
+	github.com/cornelk/hashmap v1.0.1 // indirect
+	github.com/dchest/siphash v1.1.0 // indirect
 	github.com/fasthttp/websocket v1.4.3 // indirect
 	github.com/graphql-go/graphql v0.8.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -19,4 +21,5 @@ require (
 	github.com/vektah/gqlparser/v2 v2.4.2 // indirect
 	github.com/yeqown/fasthttp-reverse-proxy/v2 v2.2.2 // indirect
 	github.com/yeqown/log v1.1.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

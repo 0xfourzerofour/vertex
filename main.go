@@ -2,6 +2,7 @@ package main
 
 import (
 	"govertex/internal/graphql"
+	"govertex/internal/service"
 	"log"
 
 	"github.com/valyala/fasthttp"
@@ -27,6 +28,8 @@ func ProxyHandler(ctx *fasthttp.RequestCtx) {
 
 func main() {
 	// Load services from config
+
+	service.LoadServices()
 
 	// build proxies
 

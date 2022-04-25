@@ -47,32 +47,38 @@ func GetIntrospectionSchema(url, token string) (*IntroSpectionResult, error) {
 	return &query, nil
 }
 
-func ParseQueryBody(body *[]byte) {
+func ParseQueryBody(body *[]byte) (*string, error) {
 
 	hq := HttpQuery{}
 
 	err := json.Unmarshal(*body, &hq)
 
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
+		return nil, err
 	}
 
 	queryAst := ast.Source{
 		Input: hq.Query,
 	}
 
-	as, err := parser.ParseQuery(&queryAst)
+	qAst, err := parser.ParseQuery(&queryAst)
 
-	if err != nil {
-		log.Print(err)
+	if err.Error() != "" {
+		return nil, err
 	}
 
-	for _, operation := range as.Operations {
-		// Name query/mutation name
+	for _, operation := range qAst.Operations {
 
-		//Directive query or mutation
+		for _, selection := range operation.SelectionSet {
+			field := selection.(*ast.Field)
 
-		log.Print(operation.SelectionSet[0])
+			return &field.Name, nil
+
+		}
+
 	}
+
+	return nil, nil
 
 }

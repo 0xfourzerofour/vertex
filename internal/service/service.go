@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/cornelk/hashmap"
+	proxy "github.com/yeqown/fasthttp-reverse-proxy/v2"
 	"gopkg.in/yaml.v2"
 )
 
@@ -41,14 +42,17 @@ func LoadServices() error {
 
 	for _, svc := range cfg.Services {
 
-		svcIntrospection, err := graphql.GetIntrospectionSchema(svc.Url, "TESTTOKEN")
+		svcIntrospection, err := graphql.GetIntrospectionSchema("https://"+svc.Url, "TESTTOKEN")
 
 		if err != nil {
 			return errors.New("Could not get introspection schema for " + svc.Url)
 		}
 
+		urlProxy := proxy.NewReverseProxy(svc.Url)
+
 		for _, queryType := range svcIntrospection.Schema.QueryType.Fields {
-			ServiceMap.Insert(queryType.Name, svc.Url)
+
+			ServiceMap.Insert(queryType.Name, urlProxy)
 		}
 
 	}

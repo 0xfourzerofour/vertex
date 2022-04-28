@@ -4,6 +4,7 @@ import (
 	"govertex/internal/graphql"
 	"govertex/internal/service"
 	"log"
+	"time"
 
 	"github.com/valyala/fasthttp"
 
@@ -11,6 +12,8 @@ import (
 )
 
 func ProxyHandler(ctx *fasthttp.RequestCtx) {
+
+	start := time.Now()
 
 	body := ctx.Request.Body()
 
@@ -20,10 +23,21 @@ func ProxyHandler(ctx *fasthttp.RequestCtx) {
 		log.Print("Could not parse request")
 	}
 
-	proxyServer, _ := service.ServiceMap.Get(*query)
+	proxyServer, _ := service.ProxyMap.GetStringKey(*query)
 
 	if proxyServer != nil {
+
+		if field, ok := service.ServiceMap.GetStringKey(*query); ok {
+
+			ctx.Request.SetRequestURI(field.(string))
+		}
+
+		t := time.Now()
+
+		log.Println(t.Sub(start))
+
 		proxyServer.(*proxy.ReverseProxy).ServeHTTP(ctx)
+
 		return
 	}
 

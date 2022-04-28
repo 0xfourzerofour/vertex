@@ -15,11 +15,13 @@ type Config struct {
 	Services []*ServiceItem `json:"services"`
 }
 type ServiceItem struct {
-	Url string `json:"url"`
-	WS  string `json:"ws"`
+	Url  string  `json:"url"`
+	WS   *string `json:"ws"`
+	Path *string `json:"path"`
 }
 
 var ServiceMap = hashmap.HashMap{}
+var ProxyMap = hashmap.HashMap{}
 
 //go:embed service-config.yml
 var serviceEmbed embed.FS
@@ -31,7 +33,7 @@ func LoadServices() error {
 	config, err := serviceEmbed.ReadFile("service-config.yml")
 
 	if err != nil {
-		log.Print(err)
+		return err
 	}
 
 	err = yaml.Unmarshal(config, &cfg)
@@ -42,7 +44,12 @@ func LoadServices() error {
 
 	for _, svc := range cfg.Services {
 
-		svcIntrospection, err := graphql.GetIntrospectionSchema("https://"+svc.Url, "TESTTOKEN")
+		serviceUri := svc.Url
+		if svc.Path != nil {
+			serviceUri += *svc.Path
+		}
+
+		svcIntrospection, err := graphql.GetIntrospectionSchema("https://"+serviceUri, "TESTTOKEN")
 
 		if err != nil {
 			return errors.New("Could not get introspection schema for " + svc.Url)
@@ -52,7 +59,15 @@ func LoadServices() error {
 
 		for _, queryType := range svcIntrospection.Schema.QueryType.Fields {
 
-			ServiceMap.Insert(queryType.Name, urlProxy)
+			if field, ok := ServiceMap.GetStringKey(queryType.Name); ok {
+				return errors.New(queryType.Name + "is already used and being send to " + field.(string))
+			}
+
+			ProxyMap.Insert(queryType.Name, urlProxy)
+
+			if svc.Path != nil {
+				ServiceMap.Insert(queryType.Name, *svc.Path)
+			}
 		}
 
 	}

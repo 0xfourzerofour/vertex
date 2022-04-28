@@ -16,6 +16,7 @@ require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/dchest/siphash v1.1.0 // indirect
 	github.com/fasthttp/websocket v1.4.3 // indirect
+	github.com/friendsofgo/graphiql v0.2.2 // indirect
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/klauspost/compress v1.15.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

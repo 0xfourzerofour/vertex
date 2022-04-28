@@ -1,19 +1,15 @@
 package main
 
 import (
+	"github.com/valyala/fasthttp"
 	"govertex/internal/graphql"
 	"govertex/internal/service"
 	"log"
-	"time"
-
-	"github.com/valyala/fasthttp"
 
 	proxy "github.com/yeqown/fasthttp-reverse-proxy/v2"
 )
 
 func ProxyHandler(ctx *fasthttp.RequestCtx) {
-
-	start := time.Now()
 
 	body := ctx.Request.Body()
 
@@ -31,10 +27,6 @@ func ProxyHandler(ctx *fasthttp.RequestCtx) {
 
 			ctx.Request.SetRequestURI(field.(string))
 		}
-
-		t := time.Now()
-
-		log.Println(t.Sub(start))
 
 		proxyServer.(*proxy.ReverseProxy).ServeHTTP(ctx)
 
@@ -56,4 +48,5 @@ func main() {
 	if err := fasthttp.ListenAndServe("localhost:3000", ProxyHandler); err != nil {
 		log.Fatal(err)
 	}
+
 }

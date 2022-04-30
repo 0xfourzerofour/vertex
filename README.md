@@ -15,7 +15,20 @@ services are added via the `internal/service/service-config.yml`
 services:
     - 
         url: "yourgraphqlservice.com"
-        ws: "ws://yourgraphqlservice.com"
-        path: "/graphql"
+        ws: "ws://yourgraphqlwebsocket"
+        path: "/graphql" //Optional
 
 ```
+
+## Considerations
+
+ - There cannot be overlapping types throughout the graphql schemas
+ - Services must have introspection turned on at the API level (Will work on a way to get around this)
+ - This project is still early days so do not use in production
+
+## TODO
+
+ - Dockerize build for easy deployment and scalability
+ - Logging
+ - Load services from CLI
+ - React UI portal to add services with API keys etc

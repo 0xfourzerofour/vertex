@@ -57,6 +57,10 @@ func LoadServices() error {
 
 		urlProxy := proxy.NewReverseProxy(svc.Url)
 
+		wsProxy, err := proxy.NewWSReverseProxyWith(
+			proxy.WithURL_OptionWS(*svc.WS),
+		)
+
 		for _, queryType := range svcIntrospection.Schema.QueryType.Fields {
 
 			if field, ok := ServiceMap.GetStringKey(queryType.Name); ok {
@@ -68,6 +72,29 @@ func LoadServices() error {
 			if svc.Path != nil {
 				ServiceMap.Insert(queryType.Name, *svc.Path)
 			}
+		}
+
+		for _, mutationType := range svcIntrospection.Schema.MutationType.Fields {
+
+			if field, ok := ServiceMap.GetStringKey(mutationType.Name); ok {
+				return errors.New(mutationType.Name + "is already used and being send to " + field.(string))
+			}
+
+			ProxyMap.Insert(mutationType.Name, urlProxy)
+
+			if svc.Path != nil {
+				ServiceMap.Insert(mutationType.Name, *svc.Path)
+			}
+		}
+
+		for _, subsriptionType := range svcIntrospection.Schema.SubscriptionType.Fields {
+
+			if field, ok := ServiceMap.GetStringKey(subsriptionType.Name); ok {
+				return errors.New(subsriptionType.Name + "is already used and being send to " + field.(string))
+			}
+
+			ProxyMap.Insert(subsriptionType.Name, wsProxy)
+
 		}
 
 	}

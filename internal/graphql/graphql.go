@@ -24,6 +24,18 @@ type IntroSpectionResult struct {
 				Description *string `graphql:"description"`
 			}
 		} `graphql:"queryType"`
+		MutationType struct {
+			Fields []struct {
+				Name        string  `graphql:"name"`
+				Description *string `graphql:"description"`
+			}
+		} `graphql:"mutationType"`
+		SubscriptionType struct {
+			Fields []struct {
+				Name        string  `graphql:"name"`
+				Description *string `graphql:"description"`
+			}
+		} `graphql:"subscriptionType"`
 	} `graphql:"__schema"`
 }
 

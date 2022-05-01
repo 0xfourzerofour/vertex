@@ -3,9 +3,14 @@ package service
 import (
 	"embed"
 	"errors"
+	"govertex/internal/clients"
 	"govertex/internal/graphql"
 	"log"
+	"os"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/cornelk/hashmap"
 	proxy "github.com/yeqown/fasthttp-reverse-proxy/v2"
 	"gopkg.in/yaml.v2"
@@ -101,4 +106,44 @@ func LoadServices() error {
 
 	return nil
 
+}
+
+func loadServicesFromDynamo() error {
+	dynamoInput := dynamodb.QueryInput{
+		TableName:              aws.String(os.Getenv("Vertex-Table")),
+		KeyConditionExpression: aws.String("PK = :PK"),
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":PK": {
+				S: aws.String("SERVICES"),
+			},
+		},
+	}
+
+	serviceList := []*ServiceItem{}
+
+	dynamoOutput, err := clients.DynamoDB().Query(&dynamoInput)
+
+	if err != nil {
+		return err
+	}
+
+	if len(dynamoOutput.Items) != 0 {
+
+		for _, item := range dynamoOutput.Items {
+
+			service := ServiceItem{}
+
+			err := dynamodbattribute.UnmarshalMap(item, &service)
+
+			if err != nil {
+				return err
+			}
+
+			serviceList = append(serviceList, &service)
+
+		}
+
+	}
+
+	return nil
 }

@@ -1,0 +1,9 @@
+services:
+    - 
+        url: "countries.trevorblades.com"
+        ws: "ws://service.com"
+    - 
+        url: "fruits-api.netlify.app"
+        path: "/graphql"
+        ws: "ws://service1.com"
+

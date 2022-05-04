@@ -46,7 +46,12 @@ func ProxyHandler(ctx *fasthttp.RequestCtx) {
 				proxyStr += path.(string)
 			}
 
+			log.Print(string(body))
+
 			go func() {
+
+				//TODO before sending whole body, check which sections of the query need to
+				// be sent to the api
 
 				sendPostRequest(service.Client, proxyStr, &body, resChannel, errChanel)
 

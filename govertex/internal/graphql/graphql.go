@@ -59,7 +59,7 @@ func GetIntrospectionSchema(url, token string) (*IntroSpectionResult, error) {
 	return &query, nil
 }
 
-func ParseQueryBody(body *[]byte) (*string, error) {
+func ParseQueryBody(body *[]byte) (*[]string, error) {
 
 	hq := HttpQuery{}
 
@@ -80,17 +80,19 @@ func ParseQueryBody(body *[]byte) (*string, error) {
 		return nil, err
 	}
 
+	queries := []string{}
+
 	for _, operation := range qAst.Operations {
 
 		for _, selection := range operation.SelectionSet {
 			field := selection.(*ast.Field)
 
-			return &field.Name, nil
+			queries = append(queries, field.Name)
 
 		}
 
 	}
 
-	return nil, nil
+	return &queries, nil
 
 }

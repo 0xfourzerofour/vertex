@@ -7,12 +7,13 @@ import (
 	"govertex/internal/graphql"
 	"log"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/cornelk/hashmap"
-	proxy "github.com/yeqown/fasthttp-reverse-proxy/v2"
+	"github.com/valyala/fasthttp"
 	"gopkg.in/yaml.v2"
 )
 
@@ -31,7 +32,26 @@ var ProxyMap = hashmap.HashMap{}
 //go:embed service-config.yml
 var serviceEmbed embed.FS
 
+var Client *fasthttp.Client
+
 func LoadServices() error {
+	readTimeout, _ := time.ParseDuration("5s")
+	writeTimeout, _ := time.ParseDuration("s")
+	maxIdleConnDuration, _ := time.ParseDuration("1h")
+
+	Client = &fasthttp.Client{
+		ReadTimeout:                   readTimeout,
+		WriteTimeout:                  writeTimeout,
+		MaxIdleConnDuration:           maxIdleConnDuration,
+		NoDefaultUserAgentHeader:      true, // Don't send: User-Agent: fasthttp
+		DisableHeaderNamesNormalizing: true, // If you set the case on your headers correctly you can enable this
+		DisablePathNormalizing:        true,
+		// increase DNS cache time to an hour instead of default minute
+		Dial: (&fasthttp.TCPDialer{
+			Concurrency:      4096,
+			DNSCacheDuration: time.Hour,
+		}).Dial,
+	}
 
 	cfg := Config{}
 
@@ -60,19 +80,13 @@ func LoadServices() error {
 			return errors.New("Could not get introspection schema for " + svc.Url)
 		}
 
-		urlProxy := proxy.NewReverseProxy(svc.Url)
-
-		wsProxy, err := proxy.NewWSReverseProxyWith(
-			proxy.WithURL_OptionWS(*svc.WS),
-		)
-
 		for _, queryType := range svcIntrospection.Schema.QueryType.Fields {
 
 			if field, ok := ServiceMap.GetStringKey(queryType.Name); ok {
 				return errors.New(queryType.Name + "is already used and being send to " + field.(string))
 			}
 
-			ProxyMap.Insert(queryType.Name, urlProxy)
+			ProxyMap.Insert(queryType.Name, svc.Url)
 
 			if svc.Path != nil {
 				ServiceMap.Insert(queryType.Name, *svc.Path)
@@ -85,7 +99,7 @@ func LoadServices() error {
 				return errors.New(mutationType.Name + "is already used and being send to " + field.(string))
 			}
 
-			ProxyMap.Insert(mutationType.Name, urlProxy)
+			ProxyMap.Insert(mutationType.Name, svc.Url)
 
 			if svc.Path != nil {
 				ServiceMap.Insert(mutationType.Name, *svc.Path)
@@ -98,7 +112,7 @@ func LoadServices() error {
 				return errors.New(subsriptionType.Name + "is already used and being send to " + field.(string))
 			}
 
-			ProxyMap.Insert(subsriptionType.Name, wsProxy)
+			ProxyMap.Insert(subsriptionType.Name, svc.WS)
 
 		}
 

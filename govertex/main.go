@@ -21,6 +21,8 @@ type GQLResp struct {
 
 func ProxyHandler(ctx *fasthttp.RequestCtx) {
 
+	init := time.Now()
+
 	body := ctx.Request.Body()
 
 	queries, err := graphql.ParseQueryBody(&body)
@@ -58,6 +60,12 @@ func ProxyHandler(ctx *fasthttp.RequestCtx) {
 			}()
 		}
 	}
+
+	after := time.Now()
+
+	nanoTime := float64(after.Nanosecond()) - float64(init.Nanosecond())
+
+	log.Printf("REQUESTS PARSED in %f ns OR %f ms", nanoTime, nanoTime/1000000)
 
 	for _, query := range *queries {
 

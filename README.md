@@ -22,8 +22,8 @@ services:
 
 ## Considerations
 
- - There cannot be overlapping types throughout the graphql schemas
- - Services must have introspection turned on at the API level (Will work on a way to get around this)
+ - There cannot be overlapping types throughout the graphql schemas (Might be an option for query polymorphism)
+ - Services must have introspection turned on at the API level (Will work on a way to get around this using AWS WAF with API keys)
  - This project is still early days so do not use in production
 
 ## TODO

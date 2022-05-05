@@ -28,6 +28,9 @@ services:
 
 ## TODO
 
+
+ - Cache hash of request body for faster proxying
+ - Split request body into service level queries 
  - Load and save services from DynamoDB
  - Dockerize build for easy deployment and scalability
  - Logging

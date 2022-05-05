@@ -84,8 +84,30 @@ func ParseQueryBody(body *[]byte) (*[]string, error) {
 
 	for _, operation := range qAst.Operations {
 
-		for _, selection := range operation.SelectionSet {
+		log.Print("OPERATION: ", operation.Operation)
+
+		log.Print(operation.SelectionSet)
+
+		for i, selection := range operation.SelectionSet {
+
 			field := selection.(*ast.Field)
+
+			if i == len(operation.SelectionSet)-1 {
+				lastQuery := hq.Query[field.Position.Start:]
+
+				log.Print(lastQuery)
+
+			}
+
+			if i > 0 {
+
+				prevField := operation.SelectionSet[i-1].(*ast.Field)
+
+				previosQuery := hq.Query[prevField.Position.Start:field.Position.Start]
+
+				log.Print(previosQuery)
+
+			}
 
 			queries = append(queries, field.Name)
 

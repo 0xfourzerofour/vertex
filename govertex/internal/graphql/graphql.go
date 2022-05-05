@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"strings"
 
 	"golang.org/x/oauth2"
 
@@ -91,12 +92,18 @@ func ParseQueryBody(body *[]byte) (*[]string, error) {
 		for i, selection := range operation.SelectionSet {
 
 			field := selection.(*ast.Field)
+			queries = append(queries, field.Name)
 
 			if i == len(operation.SelectionSet)-1 {
 				lastQuery := hq.Query[field.Position.Start:]
 
+				lastBrace := strings.LastIndex(lastQuery, "}")
+
+				lastQuery = lastQuery[:lastBrace]
+
 				log.Print(lastQuery)
 
+				break
 			}
 
 			if i > 0 {
@@ -108,8 +115,6 @@ func ParseQueryBody(body *[]byte) (*[]string, error) {
 				log.Print(previosQuery)
 
 			}
-
-			queries = append(queries, field.Name)
 
 		}
 

@@ -65,6 +65,7 @@ query vertex($id: ID!) {
 ## TODO
 
  - Load all graphs into one schema for playground introspection
+ - Add Web socket functionality for subsriptions
  - Cache hash of request body for faster proxying
  - Load and save services from DynamoDB
  - Allow passing variables to query/mutations

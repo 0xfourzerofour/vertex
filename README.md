@@ -1,4 +1,4 @@
-### Vertex GraphQL service proxy ### 
+### Vertex GraphQL Api Gateway ### 
 
 This Project is inspired by current pitfalls that I have come across at work with monolithic graphql schemas.
 Vertex aims to solve this issue by allowing a single graphql endpoint to many downstream services by parsing 
@@ -64,6 +64,7 @@ query vertex($id: ID!) {
 
 ## TODO
 
+ - Add terraform deployment to autoscaling group behind a load balancer
  - Load all graphs into one schema for playground introspection
  - Add Web socket functionality for subsriptions
  - Cache hash of request body for faster proxying
@@ -72,4 +73,3 @@ query vertex($id: ID!) {
  - Dockerize build for easy deployment and scalability
  - Logging
  - Load services from CLI
- - React UI portal to add services with API keys etc

@@ -20,6 +20,10 @@ services:
 
 ```
 
+## Exciting findings
+
+ - requests can be parsed within 0.01-0.1ms which will only get faster after I implement request caching
+
 ## Considerations
 
  - There cannot be overlapping types throughout the graphql schemas (Might be an option for query polymorphism based on different variables)
@@ -28,7 +32,7 @@ services:
 
 ## TODO
 
-
+ - Load all graphs into one schema for playground introspection
  - Cache hash of request body for faster proxying
  - Load and save services from DynamoDB
  - Allow passing variables to query/mutations

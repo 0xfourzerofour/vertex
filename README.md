@@ -22,7 +22,7 @@ services:
 
 ## Considerations
 
- - There cannot be overlapping types throughout the graphql schemas (Might be an option for query polymorphism)
+ - There cannot be overlapping types throughout the graphql schemas (Might be an option for query polymorphism based on different variables)
  - Services must have introspection turned on at the API level (Will work on a way to get around this using AWS WAF with API keys)
  - This project is still early days so do not use in production
 
@@ -30,8 +30,8 @@ services:
 
 
  - Cache hash of request body for faster proxying
- - Split request body into service level queries 
  - Load and save services from DynamoDB
+ - Allow passing variables to query/mutations
  - Dockerize build for easy deployment and scalability
  - Logging
  - Load services from CLI

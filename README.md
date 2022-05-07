@@ -20,6 +20,38 @@ services:
 
 ```
 
+## Example Query
+
+```
+
+query vertex($id: ID!) {
+
+    //fruists api
+
+    fruit(id: $id) {
+        description     
+    }
+    
+    //countries api    
+    
+    languages {
+        code
+    }
+    
+    //rick and morty api
+    
+    characters(page: 2, filter: { name: "Morty" }) {
+      info {
+        count
+      }
+      results {
+        name
+      }
+    }
+}
+
+```
+
 ## Exciting findings
 
  - requests can be parsed within 0.01-0.1ms which will only get faster after I implement request caching

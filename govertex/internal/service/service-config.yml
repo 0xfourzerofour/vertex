@@ -6,4 +6,8 @@ services:
         url: "fruits-api.netlify.app"
         path: "/graphql"
         ws: "ws://service1.com"
+    - 
+        url: "rickandmortyapi.com"
+        path: "/graphql"
+        ws: "ws://service1.com"
 

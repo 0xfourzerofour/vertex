@@ -1,29 +1,37 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"govertex/internal/graphql"
+
 	"govertex/internal/service"
 	"log"
 	"net/http"
 	"reflect"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/valyala/fasthttp"
 )
 
 type GQLResp struct {
-	Data  map[string]interface{} `json:"data"`
+	Data  map[string]interface{} `json:"data,omitempty"`
 	Error *struct {
 		Message string `json:"message"`
-	} `json:"error"`
+	} `json:"error,omitempty"`
 }
 
-func ProxyHandler(ctx *fasthttp.RequestCtx) {
+func ProxyHandler(fastctx *fasthttp.RequestCtx) {
+
+	ctx := context.Background()
+
+	g, _ := errgroup.WithContext(ctx)
 
 	init := time.Now()
 
-	body := ctx.Request.Body()
+	body := fastctx.Request.Body()
 
 	queries, err := graphql.ParseQueryBody(&body)
 
@@ -31,33 +39,40 @@ func ProxyHandler(ctx *fasthttp.RequestCtx) {
 		log.Print("Could not parse request")
 	}
 
-	resChannel := make(chan GQLResp)
-	errChanel := make(chan []byte)
 	d := make(map[string]interface{})
 	result := GQLResp{
 		Data: d,
 	}
 
-	for _, query := range *queries {
+	for _, query := range queries {
 
-		if proxy, ok := service.ProxyMap.GetStringKey(query); ok {
+		queryName := query.QueryName
+
+		if proxy, ok := service.ProxyMap.GetStringKey(query.QueryName); ok {
 
 			proxyStr := proxy.(string)
 
-			if path, ok := service.ServiceMap.GetStringKey(query); ok {
+			if path, ok := service.ServiceMap.GetStringKey(query.QueryName); ok {
 				proxyStr += path.(string)
 			}
 
-			log.Print(string(body))
+			b, err := json.Marshal(query.Body)
 
-			go func() {
+			if err != nil {
+				log.Print(err)
+			}
 
-				//TODO before sending whole body, check which sections of the query need to
-				// be sent to the api
+			g.Go(func() error {
 
-				sendPostRequest(service.Client, proxyStr, &body, resChannel, errChanel)
+				postRes, err := sendPostRequest(service.Client, proxyStr, b)
 
-			}()
+				if err == nil {
+					result.Data[queryName] = postRes.Data[queryName]
+				}
+
+				return err
+
+			})
 		}
 	}
 
@@ -67,29 +82,29 @@ func ProxyHandler(ctx *fasthttp.RequestCtx) {
 
 	log.Printf("REQUESTS PARSED in %f ns OR %f ms", nanoTime, nanoTime/1000000)
 
-	for _, query := range *queries {
-
-		data := <-resChannel
-
-		result.Data[query] = data.Data[query]
-
+	if err := g.Wait(); err != nil {
+		log.Panic("Could not send all requests")
 	}
 
 	final, err := json.Marshal(result)
 
-	ctx.Response.SetBody(final)
+	if err != nil {
+		fastctx.Response.SetStatusCode(500)
+	}
+
+	fastctx.Response.SetBody(final)
 
 }
 
 func main() {
-
-	log.Print("Starting")
 
 	err := service.LoadServices()
 
 	if err != nil {
 		log.Fatal("Could not load services")
 	}
+
+	log.Print("SERVICES LOADED")
 
 	if err := fasthttp.ListenAndServe("localhost:3000", ProxyHandler); err != nil {
 		log.Fatal(err)
@@ -106,17 +121,18 @@ type Entity struct {
 	Name string
 }
 
-func sendPostRequest(client *fasthttp.Client, url string, body *[]byte, bodyBytes chan<- GQLResp, errorChan chan<- []byte) {
+func sendPostRequest(client *fasthttp.Client, url string, body []byte) (*GQLResp, error) {
+
 	// per-request timeout
 	reqTimeout := 5 * time.Second
 
-	log.Print(url)
+	log.Print("URL: ", url, string(body))
 
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI("https://" + url)
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentTypeBytes(headerContentTypeJson)
-	req.SetBodyRaw(*body)
+	req.SetBodyRaw(body)
 	resp := fasthttp.AcquireResponse()
 	err := client.DoTimeout(req, resp, reqTimeout)
 	fasthttp.ReleaseRequest(req)
@@ -130,9 +146,7 @@ func sendPostRequest(client *fasthttp.Client, url string, body *[]byte, bodyByte
 	} else {
 
 		errName, known := httpConnError(err)
-
 		log.Print(errName)
-
 		if known {
 			log.Print(known)
 		} else {
@@ -140,13 +154,21 @@ func sendPostRequest(client *fasthttp.Client, url string, body *[]byte, bodyByte
 		}
 	}
 
-	resBody := GQLResp{}
-
-	err = json.Unmarshal(resp.Body(), &resBody)
-
-	bodyBytes <- resBody
+	bodyVal := resp.Body()
 
 	fasthttp.ReleaseResponse(resp)
+
+	resBody := GQLResp{}
+
+	err = json.Unmarshal(bodyVal, &resBody)
+
+	if err != nil {
+		return nil, err
+
+	}
+
+	return &resBody, nil
+
 }
 
 func httpConnError(err error) (string, bool) {

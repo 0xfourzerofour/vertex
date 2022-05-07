@@ -3,6 +3,7 @@ package graphql
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 
@@ -15,6 +16,13 @@ import (
 
 type HttpQuery struct {
 	Query string `json:"query"`
+}
+
+type SubQuery struct {
+	QueryName string `json:"queryName"`
+	Query     string `json:"query"`
+	Operation string `json:"operation"`
+	Body      HttpQuery
 }
 
 type IntroSpectionResult struct {
@@ -60,7 +68,7 @@ func GetIntrospectionSchema(url, token string) (*IntroSpectionResult, error) {
 	return &query, nil
 }
 
-func ParseQueryBody(body *[]byte) (*[]string, error) {
+func ParseQueryBody(body *[]byte) ([]*SubQuery, error) {
 
 	hq := HttpQuery{}
 
@@ -81,18 +89,13 @@ func ParseQueryBody(body *[]byte) (*[]string, error) {
 		return nil, err
 	}
 
-	queries := []string{}
+	queries := []*SubQuery{}
 
 	for _, operation := range qAst.Operations {
-
-		log.Print("OPERATION: ", operation.Operation)
-
-		log.Print(operation.SelectionSet)
 
 		for i, selection := range operation.SelectionSet {
 
 			field := selection.(*ast.Field)
-			queries = append(queries, field.Name)
 
 			if i == len(operation.SelectionSet)-1 {
 				lastQuery := hq.Query[field.Position.Start:]
@@ -101,9 +104,21 @@ func ParseQueryBody(body *[]byte) (*[]string, error) {
 
 				lastQuery = lastQuery[:lastBrace]
 
-				log.Print(lastQuery)
+				newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, lastQuery)
 
-				break
+				queryBody := HttpQuery{
+					Query: newBody,
+				}
+
+				sub := SubQuery{
+					Query:     lastQuery,
+					Operation: string(operation.Operation),
+					QueryName: field.Name,
+					Body:      queryBody,
+				}
+
+				queries = append(queries, &sub)
+
 			}
 
 			if i > 0 {
@@ -112,7 +127,20 @@ func ParseQueryBody(body *[]byte) (*[]string, error) {
 
 				previosQuery := hq.Query[prevField.Position.Start:field.Position.Start]
 
-				log.Print(previosQuery)
+				newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, previosQuery)
+
+				queryBody := HttpQuery{
+					Query: newBody,
+				}
+
+				sub := SubQuery{
+					Query:     previosQuery,
+					Operation: string(operation.Operation),
+					QueryName: prevField.Name,
+					Body:      queryBody,
+				}
+
+				queries = append(queries, &sub)
 
 			}
 
@@ -120,6 +148,6 @@ func ParseQueryBody(body *[]byte) (*[]string, error) {
 
 	}
 
-	return &queries, nil
+	return queries, nil
 
 }

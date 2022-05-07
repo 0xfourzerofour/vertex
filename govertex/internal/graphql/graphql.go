@@ -15,7 +15,13 @@ import (
 )
 
 type HttpQuery struct {
-	Query string `json:"query"`
+	Query     string                 `json:"query"`
+	Variables map[string]interface{} `json:"variables,omitempty"`
+}
+
+type VariableDirectives struct {
+	Name       string
+	IsNullable bool
 }
 
 type SubQuery struct {
@@ -93,59 +99,122 @@ func ParseQueryBody(body *[]byte) ([]*SubQuery, error) {
 
 	for _, operation := range qAst.Operations {
 
-		for i, selection := range operation.SelectionSet {
+		operationMap := make(map[string]*VariableDirectives)
 
-			field := selection.(*ast.Field)
-
-			if i == len(operation.SelectionSet)-1 {
-				lastQuery := hq.Query[field.Position.Start:]
-
-				lastBrace := strings.LastIndex(lastQuery, "}")
-
-				lastQuery = lastQuery[:lastBrace]
-
-				newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, lastQuery)
-
-				queryBody := HttpQuery{
-					Query: newBody,
-				}
-
-				sub := SubQuery{
-					Query:     lastQuery,
-					Operation: string(operation.Operation),
-					QueryName: field.Name,
-					Body:      queryBody,
-				}
-
-				queries = append(queries, &sub)
-
+		for _, variableDef := range operation.VariableDefinitions {
+			operationMap[variableDef.Variable] = &VariableDirectives{
+				Name:       variableDef.Type.Name(),
+				IsNullable: variableDef.Type.NonNull,
 			}
 
-			if i > 0 {
+			for i, selection := range operation.SelectionSet {
 
-				prevField := operation.SelectionSet[i-1].(*ast.Field)
+				field := selection.(*ast.Field)
 
-				previosQuery := hq.Query[prevField.Position.Start:field.Position.Start]
+				if i == len(operation.SelectionSet)-1 {
+					lastQuery := hq.Query[field.Position.Start:]
 
-				newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, previosQuery)
+					lastBrace := strings.LastIndex(lastQuery, "}")
 
-				queryBody := HttpQuery{
-					Query: newBody,
+					lastQuery = lastQuery[:lastBrace]
+
+					newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, lastQuery)
+
+					variables := make(map[string]interface{})
+
+					variableStr := ""
+
+					for i, queryVar := range field.Arguments {
+						if val, ok := hq.Variables[queryVar.Name]; ok {
+							variables[queryVar.Name] = val
+						}
+						if val, ok := operationMap[queryVar.Name]; ok {
+
+							variableStr += "$" + queryVar.Name + ": " + val.Name
+							if val.IsNullable {
+								variableStr += "!"
+							}
+
+							if i != len(field.Arguments)-1 {
+								variableStr += ","
+							}
+						}
+					}
+
+					if variableStr != "" {
+						newBody = fmt.Sprintf(`%s %s(%s) { %s }`, operation.Operation, operation.Name, variableStr, lastQuery)
+					}
+
+					queryBody := HttpQuery{
+						Query:     newBody,
+						Variables: variables,
+					}
+
+					sub := SubQuery{
+						Query:     lastQuery,
+						Operation: string(operation.Operation),
+						QueryName: field.Name,
+						Body:      queryBody,
+					}
+
+					queries = append(queries, &sub)
+
 				}
 
-				sub := SubQuery{
-					Query:     previosQuery,
-					Operation: string(operation.Operation),
-					QueryName: prevField.Name,
-					Body:      queryBody,
-				}
+				if i > 0 {
 
-				queries = append(queries, &sub)
+					prevField := operation.SelectionSet[i-1].(*ast.Field)
+
+					previosQuery := hq.Query[prevField.Position.Start:field.Position.Start]
+
+					newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, previosQuery)
+
+					variables := make(map[string]interface{})
+
+					variableStr := ""
+
+					for i, queryVar := range prevField.Arguments {
+						if val, ok := hq.Variables[queryVar.Name]; ok {
+							variables[queryVar.Name] = val
+						}
+
+						if val, ok := operationMap[queryVar.Name]; ok {
+							variableStr += "$" + queryVar.Name + ": " + val.Name
+
+							if val.IsNullable {
+								variableStr += "!"
+							}
+
+							if i != len(prevField.Arguments)-1 {
+								variableStr += ","
+							}
+						}
+					}
+
+					if variableStr != "" {
+						newBody = fmt.Sprintf(`%s %s(%s) { %s }`, operation.Operation, operation.Name, variableStr, previosQuery)
+
+					}
+
+					queryBody := HttpQuery{
+						Query:     newBody,
+						Variables: variables,
+					}
+
+					sub := SubQuery{
+						Query:     previosQuery,
+						Operation: string(operation.Operation),
+						QueryName: prevField.Name,
+						Body:      queryBody,
+					}
+
+					queries = append(queries, &sub)
+
+				}
 
 			}
 
 		}
-
 	}
 
 	return queries, nil

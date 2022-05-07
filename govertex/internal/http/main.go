@@ -81,8 +81,6 @@ func sendPostRequest(client *fasthttp.Client, url string, body []byte) (*GQLResp
 
 	reqTimeout := 5 * time.Second
 
-	log.Print("URL: ", url, string(body))
-
 	req := fasthttp.AcquireRequest()
 	req.SetRequestURI("https://" + url)
 	req.Header.SetMethod(fasthttp.MethodPost)

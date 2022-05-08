@@ -107,114 +107,115 @@ func ParseQueryBody(body *[]byte) ([]*SubQuery, error) {
 				IsNullable: variableDef.Type.NonNull,
 			}
 
-			for i, selection := range operation.SelectionSet {
+		}
 
-				field := selection.(*ast.Field)
+		for i, selection := range operation.SelectionSet {
 
-				if i == len(operation.SelectionSet)-1 {
-					lastQuery := hq.Query[field.Position.Start:]
+			field := selection.(*ast.Field)
 
-					lastBrace := strings.LastIndex(lastQuery, "}")
+			if i == len(operation.SelectionSet)-1 {
+				lastQuery := hq.Query[field.Position.Start:]
 
-					lastQuery = lastQuery[:lastBrace]
+				lastBrace := strings.LastIndex(lastQuery, "}")
 
-					newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, lastQuery)
+				lastQuery = lastQuery[:lastBrace]
 
-					variables := make(map[string]interface{})
+				newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, lastQuery)
 
-					variableStr := ""
+				variables := make(map[string]interface{})
 
-					for i, queryVar := range field.Arguments {
-						if val, ok := hq.Variables[queryVar.Name]; ok {
-							variables[queryVar.Name] = val
+				variableStr := ""
+
+				for i, queryVar := range field.Arguments {
+					if val, ok := hq.Variables[queryVar.Name]; ok {
+						variables[queryVar.Name] = val
+					}
+					if val, ok := operationMap[queryVar.Name]; ok {
+
+						variableStr += "$" + queryVar.Name + ": " + val.Name
+						if val.IsNullable {
+							variableStr += "!"
 						}
-						if val, ok := operationMap[queryVar.Name]; ok {
 
-							variableStr += "$" + queryVar.Name + ": " + val.Name
-							if val.IsNullable {
-								variableStr += "!"
-							}
-
-							if i != len(field.Arguments)-1 {
-								variableStr += ","
-							}
+						if i != len(field.Arguments)-1 {
+							variableStr += ","
 						}
 					}
+				}
 
-					if variableStr != "" {
-						newBody = fmt.Sprintf(`%s %s(%s) { %s }`, operation.Operation, operation.Name, variableStr, lastQuery)
+				if variableStr != "" {
+					newBody = fmt.Sprintf(`%s %s(%s) { %s }`, operation.Operation, operation.Name, variableStr, lastQuery)
+				}
+
+				queryBody := HttpQuery{
+					Query:     newBody,
+					Variables: variables,
+				}
+
+				sub := SubQuery{
+					Query:     lastQuery,
+					Operation: string(operation.Operation),
+					QueryName: field.Name,
+					Body:      queryBody,
+				}
+
+				queries = append(queries, &sub)
+
+			}
+
+			if i > 0 {
+
+				prevField := operation.SelectionSet[i-1].(*ast.Field)
+
+				previosQuery := hq.Query[prevField.Position.Start:field.Position.Start]
+
+				newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, previosQuery)
+
+				variables := make(map[string]interface{})
+
+				variableStr := ""
+
+				for i, queryVar := range prevField.Arguments {
+					if val, ok := hq.Variables[queryVar.Name]; ok {
+						variables[queryVar.Name] = val
 					}
 
-					queryBody := HttpQuery{
-						Query:     newBody,
-						Variables: variables,
-					}
+					if val, ok := operationMap[queryVar.Name]; ok {
+						variableStr += "$" + queryVar.Name + ": " + val.Name
 
-					sub := SubQuery{
-						Query:     lastQuery,
-						Operation: string(operation.Operation),
-						QueryName: field.Name,
-						Body:      queryBody,
-					}
+						if val.IsNullable {
+							variableStr += "!"
+						}
 
-					queries = append(queries, &sub)
+						if i != len(prevField.Arguments)-1 {
+							variableStr += ","
+						}
+					}
+				}
+
+				if variableStr != "" {
+					newBody = fmt.Sprintf(`%s %s(%s) { %s }`, operation.Operation, operation.Name, variableStr, previosQuery)
 
 				}
 
-				if i > 0 {
-
-					prevField := operation.SelectionSet[i-1].(*ast.Field)
-
-					previosQuery := hq.Query[prevField.Position.Start:field.Position.Start]
-
-					newBody := fmt.Sprintf(`%s %s { %s }`, operation.Operation, operation.Name, previosQuery)
-
-					variables := make(map[string]interface{})
-
-					variableStr := ""
-
-					for i, queryVar := range prevField.Arguments {
-						if val, ok := hq.Variables[queryVar.Name]; ok {
-							variables[queryVar.Name] = val
-						}
-
-						if val, ok := operationMap[queryVar.Name]; ok {
-							variableStr += "$" + queryVar.Name + ": " + val.Name
-
-							if val.IsNullable {
-								variableStr += "!"
-							}
-
-							if i != len(prevField.Arguments)-1 {
-								variableStr += ","
-							}
-						}
-					}
-
-					if variableStr != "" {
-						newBody = fmt.Sprintf(`%s %s(%s) { %s }`, operation.Operation, operation.Name, variableStr, previosQuery)
-
-					}
-
-					queryBody := HttpQuery{
-						Query:     newBody,
-						Variables: variables,
-					}
-
-					sub := SubQuery{
-						Query:     previosQuery,
-						Operation: string(operation.Operation),
-						QueryName: prevField.Name,
-						Body:      queryBody,
-					}
-
-					queries = append(queries, &sub)
-
+				queryBody := HttpQuery{
+					Query:     newBody,
+					Variables: variables,
 				}
+
+				sub := SubQuery{
+					Query:     previosQuery,
+					Operation: string(operation.Operation),
+					QueryName: prevField.Name,
+					Body:      queryBody,
+				}
+
+				queries = append(queries, &sub)
 
 			}
 
 		}
+
 	}
 
 	return queries, nil

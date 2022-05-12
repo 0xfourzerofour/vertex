@@ -59,14 +59,16 @@ query vertex($id: ID!) {
 ## Considerations
 
  - There cannot be overlapping types throughout the graphql schemas (Might be an option for query polymorphism based on different variables)
- - Services must have introspection turned on at the API level (Will work on a way to get around this using AWS WAF with API keys)
+ - Services must have introspection turned on at the API level (I am working around this using a ci tool to publish schemas)
  - This project is still early days so do not use in production
 
 ## TODO
 
  - Add terraform deployment to autoscaling group behind a load balancer
+ - create cli tool to deploy schemas from service ci to remove need for introspection
  - Load all graphs into one schema for playground introspection
  - Add Web socket functionality for subsriptions
+ - cache full introspection graph in memory for fast retrieval
  - Cache hash of request body for faster proxying
  - Load and save services from DynamoDB
  - Allow passing variables to query/mutations

@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"govertex/domain/proxy"
+	"govertex/domain/schemas"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/valyala/fasthttp"
+	"golang.org/x/sync/errgroup"
 )
 
 type proxyImp struct {
@@ -69,4 +71,57 @@ func (p *proxyImp) Forward(ctx context.Context, url string, body []byte) (*proxy
 	}
 
 	return &resBody, nil
+}
+
+func (p *proxyImp) SendConcurrentRequests(ctx *fasthttp.RequestCtx, queries []*schemas.SubQuery) (*proxy.GQLResp, error) {
+
+	g := errgroup.Group{}
+
+	d := make(map[string]interface{})
+
+	result := proxy.GQLResp{
+		Data: d,
+	}
+
+	for _, query := range queries {
+
+		queryName := query.QueryName
+
+		log.Print(queryName)
+
+		// if proxy, ok := service.ProxyMap.GetStringKey(query.QueryName); ok {
+
+		// 	proxyStr := proxy.(string)
+
+		// 	// if path, ok := service.ServiceMap.GetStringKey(query.QueryName); ok {
+
+		// 	// 	proxyStr += path.(string)
+
+		// 	// }
+
+		// 	b, err := json.Marshal(query.Body)
+
+		// 	if err != nil {
+		// 		log.Print(err)
+		// 	}
+
+		// 	g.Go(func() error {
+
+		// 		postRes, err := p.Forward(ctx, proxyStr, b)
+
+		// 		if err == nil {
+		// 			result.Data[queryName] = postRes.Data[queryName]
+		// 		}
+
+		// 		return err
+
+		// 	})
+		// }
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }

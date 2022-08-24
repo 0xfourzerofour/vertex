@@ -2,11 +2,13 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
 	"govertex/domain/proxy"
 	"govertex/domain/schemas"
 	"log"
 
-	"golang.org/x/sync/errgroup"
+	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttputil"
 )
 
 type vertexUsecase struct {
@@ -29,57 +31,35 @@ func (v *vertexUsecase) MergeSchemas(ctx context.Context) error {
 		return err
 	}
 
-	log.Print("SCHEMAS: ", schemaList)
-
 	return v.schemaRepo.Merge(ctx, schemaList)
 }
 
-func (v *vertexUsecase) SendConcurrentRequests(ctx context.Context, queries []*graphql.SubQuery) error {
+func (v *vertexUsecase) ProxyHandler(fastctx *fasthttp.RequestCtx) {
+	body := fastctx.Request.Body()
 
-	g, _ := errgroup.WithContext(ctx)
+	queries, err := schemas.ParseQueryBody(&body)
 
-	d := make(map[string]interface{})
-
-	result := proxy.GQLResp{
-		Data: d,
+	if err != nil {
+		log.Print("Could not parse request")
 	}
 
-	for _, query := range queries {
+	result, err := v.proxyRepo.SendConcurrentRequests(fastctx, queries)
 
-		queryName := query.QueryName
+	final, err := json.Marshal(result)
 
-		if proxy, ok := service.ProxyMap.GetStringKey(query.QueryName); ok {
-
-			proxyStr := proxy.(string)
-
-			if path, ok := service.ServiceMap.GetStringKey(query.QueryName); ok {
-				proxyStr += path.(string)
-			}
-
-			b, err := json.Marshal(query.Body)
-
-			if err != nil {
-				log.Print(err)
-			}
-
-			g.Go(func() error {
-
-				postRes, err := sendPostRequest(service.Client, proxyStr, b)
-
-				if err == nil {
-					result.Data[queryName] = postRes.Data[queryName]
-				}
-
-				return err
-
-			})
-		}
+	if err != nil {
+		fastctx.Response.SetStatusCode(500)
 	}
 
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
+	fastctx.Response.SetBody(final)
+}
 
-	return &result, nil
+func (v *vertexUsecase) Listen(ctx context.Context) {
+
+	inmemlistener := fasthttputil.NewInmemoryListener()
+
+	if err := fasthttp.Serve(inmemlistener, v.ProxyHandler); err != nil {
+		log.Fatal(err)
+	}
 
 }

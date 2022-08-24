@@ -5,7 +5,7 @@ import (
 	"govertex/internal/graphql"
 	internalHttp "govertex/internal/http"
 
-	"govertex/internal/service"
+	// "govertex/internal/service"
 	"log"
 	"time"
 
@@ -13,11 +13,8 @@ import (
 )
 
 func ProxyHandler(fastctx *fasthttp.RequestCtx) {
-
 	init := time.Now()
-
 	body := fastctx.Request.Body()
-
 	queries, err := graphql.ParseQueryBody(&body)
 
 	if err != nil {
@@ -42,12 +39,11 @@ func ProxyHandler(fastctx *fasthttp.RequestCtx) {
 }
 
 func main() {
+	// err := service.LoadServices()
 
-	err := service.LoadServices()
-
-	if err != nil {
-		log.Fatal("Could not load services")
-	}
+	// if err != nil {
+	// 	log.Fatal("Could not load services")
+	// }
 
 	log.Print("SERVICES LOADED")
 

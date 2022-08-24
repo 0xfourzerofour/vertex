@@ -3,9 +3,11 @@ module govertex
 go 1.18
 
 require (
+	github.com/aws/aws-lambda-go v1.34.1
 	github.com/aws/aws-sdk-go v1.44.4
 	github.com/aws/aws-xray-sdk-go v1.7.0
 	github.com/cornelk/hashmap v1.0.1
+	github.com/mattdamon108/gqlmerge v0.2.5
 	github.com/shurcooL/graphql v0.0.0-20200928012149-18c5c3165e3a
 	github.com/valyala/fasthttp v1.36.0
 	github.com/vektah/gqlparser/v2 v2.4.2
@@ -21,7 +23,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.15.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect

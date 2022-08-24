@@ -89,6 +89,7 @@ func sendPostRequest(client *fasthttp.Client, url string, body []byte) (*GQLResp
 	resp := fasthttp.AcquireResponse()
 	err := client.DoTimeout(req, resp, reqTimeout)
 	fasthttp.ReleaseRequest(req)
+
 	if err == nil {
 		statusCode := resp.StatusCode()
 		if statusCode == http.StatusOK {

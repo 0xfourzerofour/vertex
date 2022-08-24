@@ -64,6 +64,8 @@ query vertex($id: ID!) {
 
 ## TODO
 
+ - Create Nextjs platform for hosted graphql schemas
+ - Create cli tool to publish schemas from service CI
  - Add terraform deployment to autoscaling group behind a load balancer
  - create cli tool to deploy schemas from service ci to remove need for introspection
  - Load all graphs into one schema for playground introspection

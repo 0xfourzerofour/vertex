@@ -2,29 +2,25 @@ package main
 
 import (
 	"context"
-	"govertex/application/usecase"
-	"govertex/infra/persistance"
-	"govertex/internal/clients"
-	"log"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-func init() {
-	log.Print("LOAD SERVICES INTO CACHE")
+type Response events.APIGatewayProxyResponse
 
-}
+func Handler(ctx context.Context) (Response, error) {
 
-func Handle(ctx context.Context, input interface{}) {
+	resp := Response{
+		StatusCode: 301,
+		Headers: map[string]string{
+			"Location": "countries.trevorblades.com/graphql",
+		},
+	}
 
-	pers := persistance.ProxyPersistance(clients.FHTTP())
-	schemaPers := persistance.SchemaPersistance(clients.S3())
-	usecase := usecase.NewVertexUsecase(schemaPers, pers)
-
-	usecase.Listen(ctx)
-
+	return resp, nil
 }
 
 func main() {
-	lambda.Start(Handle)
+	lambda.Start(Handler)
 }

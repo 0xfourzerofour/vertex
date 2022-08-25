@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/valyala/fasthttp"
 	"golang.org/x/sync/errgroup"
 )
@@ -23,7 +24,7 @@ func ProxyPersistance(proxyConn *fasthttp.Client) proxy.ProxyRepository {
 	}
 }
 
-func (p *proxyImp) Forward(ctx context.Context, url string, body []byte) (*proxy.GQLResp, error) {
+func (p *proxyImp) Forward(ctx context.Context, originReq events.APIGatewayProxyRequest, url string, body []byte) (*proxy.GQLResp, error) {
 
 	reqTimeout := 5 * time.Second
 
@@ -34,6 +35,11 @@ func (p *proxyImp) Forward(ctx context.Context, url string, body []byte) (*proxy
 	req.SetRequestURI("https://" + url)
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentTypeBytes(headerContentTypeJson)
+
+	for key, header := range originReq.Headers {
+		req.Header.Add(key, header)
+	}
+
 	req.SetBodyRaw(body)
 	resp := fasthttp.AcquireResponse()
 
@@ -73,7 +79,7 @@ func (p *proxyImp) Forward(ctx context.Context, url string, body []byte) (*proxy
 	return &resBody, nil
 }
 
-func (p *proxyImp) SendConcurrentRequests(ctx *fasthttp.RequestCtx, queries []*schemas.SubQuery) (*proxy.GQLResp, error) {
+func (p *proxyImp) SendConcurrentRequests(ctx *fasthttp.RequestCtx, originReq events.APIGatewayProxyRequest, queries []*schemas.SubQuery) (*proxy.GQLResp, error) {
 
 	g := errgroup.Group{}
 
@@ -89,34 +95,34 @@ func (p *proxyImp) SendConcurrentRequests(ctx *fasthttp.RequestCtx, queries []*s
 
 		log.Print(queryName)
 
-		// if proxy, ok := service.ProxyMap.GetStringKey(query.QueryName); ok {
+		if proxy, ok := service.ProxyMap.GetStringKey(query.QueryName); ok {
 
-		// 	proxyStr := proxy.(string)
+			proxyStr := proxy.(string)
 
-		// 	// if path, ok := service.ServiceMap.GetStringKey(query.QueryName); ok {
+			// if path, ok := service.ServiceMap.GetStringKey(query.QueryName); ok {
 
-		// 	// 	proxyStr += path.(string)
+			// 	proxyStr += path.(string)
 
-		// 	// }
+			// }
 
-		// 	b, err := json.Marshal(query.Body)
+			b, err := json.Marshal(query.Body)
 
-		// 	if err != nil {
-		// 		log.Print(err)
-		// 	}
+			if err != nil {
+				log.Print(err)
+			}
 
-		// 	g.Go(func() error {
+			g.Go(func() error {
 
-		// 		postRes, err := p.Forward(ctx, proxyStr, b)
+				postRes, err := p.Forward(ctx, originReq, proxyStr, b)
 
-		// 		if err == nil {
-		// 			result.Data[queryName] = postRes.Data[queryName]
-		// 		}
+				if err == nil {
+					result.Data[queryName] = postRes.Data[queryName]
+				}
 
-		// 		return err
+				return err
 
-		// 	})
-		// }
+			})
+		}
 	}
 
 	if err := g.Wait(); err != nil {

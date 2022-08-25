@@ -7,8 +7,7 @@ import (
 	"govertex/domain/schemas"
 	"log"
 
-	"github.com/valyala/fasthttp"
-	"github.com/valyala/fasthttp/fasthttputil"
+	"github.com/aws/aws-lambda-go/events"
 )
 
 type vertexUsecase struct {
@@ -34,8 +33,8 @@ func (v *vertexUsecase) MergeSchemas(ctx context.Context) error {
 	return v.schemaRepo.Merge(ctx, schemaList)
 }
 
-func (v *vertexUsecase) ProxyHandler(fastctx *fasthttp.RequestCtx) {
-	body := fastctx.Request.Body()
+func (v *vertexUsecase) ProxyHandler(ctx context.Context, req events.APIGatewayProxyRequest) ([]byte, error) {
+	body := []byte(req.Body)
 
 	queries, err := schemas.ParseQueryBody(&body)
 
@@ -43,23 +42,15 @@ func (v *vertexUsecase) ProxyHandler(fastctx *fasthttp.RequestCtx) {
 		log.Print("Could not parse request")
 	}
 
-	result, err := v.proxyRepo.SendConcurrentRequests(fastctx, queries)
+	result, err := v.proxyRepo.SendConcurrentRequests(ctx, req, queries)
 
 	final, err := json.Marshal(result)
 
 	if err != nil {
-		fastctx.Response.SetStatusCode(500)
+		return nil, err
+
 	}
 
-	fastctx.Response.SetBody(final)
-}
-
-func (v *vertexUsecase) Listen(ctx context.Context) {
-
-	inmemlistener := fasthttputil.NewInmemoryListener()
-
-	if err := fasthttp.Serve(inmemlistener, v.ProxyHandler); err != nil {
-		log.Fatal(err)
-	}
+	return final, nil
 
 }

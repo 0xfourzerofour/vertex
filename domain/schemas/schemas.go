@@ -28,6 +28,13 @@ type SubQuery struct {
 	Body      HttpQuery
 }
 
+type VertexData struct {
+	ServiceName string            `json:"serviceName"`
+	ServiceUrl  string            `json:"serviceUrl"`
+	Schema      string            `json:"schema"`
+	QueryMap    map[string]string `json:"queryMap"`
+}
+
 type SchemaRepository interface {
 	GetMaster(ctx context.Context) error
 	ListSubSchemas(ctx context.Context) ([][]byte, error)

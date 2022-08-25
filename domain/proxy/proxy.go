@@ -5,6 +5,7 @@ import (
 	"govertex/domain/schemas"
 	"reflect"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/valyala/fasthttp"
 )
 
@@ -16,8 +17,8 @@ type GQLResp struct {
 }
 
 type ProxyRepository interface {
-	Forward(ctx context.Context, url string, body []byte) (*GQLResp, error)
-	SendConcurrentRequests(ctx *fasthttp.RequestCtx, queries []*schemas.SubQuery) (*GQLResp, error)
+	Forward(ctx context.Context, originReq events.APIGatewayProxyRequest, url string, body []byte) (*GQLResp, error)
+	SendConcurrentRequests(ctx context.Context, originReq events.APIGatewayProxyRequest, queries []*schemas.SubQuery) (*GQLResp, error)
 }
 
 func HttpConnError(err error) (string, bool) {

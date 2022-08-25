@@ -3,6 +3,7 @@ package persistance
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"govertex/domain/schemas"
 	"io/ioutil"
 	"log"
@@ -25,14 +26,22 @@ func SchemaPersistance(s3Conn *s3.S3) schemas.SchemaRepository {
 	}
 }
 
-func (s *schemaImp) Merge(ctx context.Context, schemaList [][]byte) error {
+func (s *schemaImp) Merge(ctx context.Context, schemaList []*schemas.VertexData) error {
 
 	eg, _ := errgroup.WithContext(ctx)
 
+	masterMap := map[string]string{}
+
 	for i, file := range schemaList {
-		func(ind int, fileData []byte) {
+		func(ind int, fileData *schemas.VertexData) {
+
+			for key, val := range fileData.QueryMap {
+				masterMap[key] = val
+			}
+
 			eg.Go(func() error {
-				err := os.WriteFile("/tmp/schema"+strconv.Itoa(ind)+".graphql", fileData, 0644)
+
+				err := os.WriteFile("/tmp/schema"+strconv.Itoa(ind)+".graphql", []byte(fileData.Schema), 0644)
 
 				if err != nil {
 					return err
@@ -51,8 +60,6 @@ func (s *schemaImp) Merge(ctx context.Context, schemaList [][]byte) error {
 
 	merged := gql.Merge("\t", "/tmp")
 
-	log.Print(*merged)
-
 	s3In := s3.PutObjectInput{
 		Bucket: aws.String(os.Getenv("SCHEMA_BUCKET")),
 		Key:    aws.String("master.graphql"),
@@ -60,6 +67,24 @@ func (s *schemaImp) Merge(ctx context.Context, schemaList [][]byte) error {
 	}
 
 	_, err := s.s3Conn.PutObjectWithContext(ctx, &s3In)
+
+	if err != nil {
+		return err
+	}
+
+	jsonMap, err := json.Marshal(masterMap)
+
+	if err != nil {
+		return err
+	}
+
+	s3In = s3.PutObjectInput{
+		Bucket: aws.String(os.Getenv("SCHEMA_BUCKET")),
+		Key:    aws.String("masterMap.json"),
+		Body:   bytes.NewReader(jsonMap),
+	}
+
+	_, err = s.s3Conn.PutObjectWithContext(ctx, &s3In)
 
 	if err != nil {
 		return err
@@ -75,7 +100,7 @@ func (s *schemaImp) GetMaster(ctx context.Context) error {
 
 }
 
-func (s *schemaImp) ListSubSchemas(ctx context.Context) ([][]byte, error) {
+func (s *schemaImp) ListSubSchemas(ctx context.Context) ([]*schemas.VertexData, error) {
 
 	eg, _ := errgroup.WithContext(ctx)
 
@@ -89,7 +114,7 @@ func (s *schemaImp) ListSubSchemas(ctx context.Context) ([][]byte, error) {
 		return nil, err
 	}
 
-	schemaArr := make([][]byte, len(s3List.Contents))
+	schemaArr := make([]*schemas.VertexData, len(s3List.Contents))
 
 	if len(s3List.Contents) > 0 {
 		for i, object := range s3List.Contents {
@@ -114,7 +139,15 @@ func (s *schemaImp) ListSubSchemas(ctx context.Context) ([][]byte, error) {
 						return err
 					}
 
-					schemaArr[ind] = outBytes
+					vertexData := schemas.VertexData{}
+
+					err = json.Unmarshal(outBytes, &vertexData)
+
+					if err != nil {
+						return err
+					}
+
+					schemaArr[ind] = &vertexData
 
 					return nil
 

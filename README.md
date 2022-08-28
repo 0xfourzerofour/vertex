@@ -23,34 +23,32 @@ services:
 
 ```
 
-## Example Query
+## Example Lambda Proxy Integration
 
 ```
+package main
 
-query vertex($id: ID!) {
+import (
+	_ "embed"
+	"github.com/joshpauline/vertex/internal/clients"
+	"github.com/joshpauline/vertex/pkg/vertex"
 
-    //fruists api
+	"github.com/aws/aws-lambda-go/lambda"
+)
 
-    fruit(id: $id) {
-        description     
-    }
-    
-    //countries api    
-    
-    languages {
-        code
-    }
-    
-    //rick and morty api
-    
-    characters(page: 2, filter: { name: "Morty" }) {
-      info {
-        count
-      }
-      results {
-        name
-      }
-    }
+//go:embed schema.graphql
+var schema string
+
+func main() {
+
+	exampleMap := map[string]string{
+		"countries": "countries.trevorblades.com/graphql",
+		"allFilms":  "swapi-graphql.netlify.app/.netlify/functions/index",
+	}
+
+	vert := vertex.NewVertex(exampleMap, schema, clients.FHTTP())
+
+	lambda.Start(vert.Handler)
 }
 
 ```

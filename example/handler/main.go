@@ -15,6 +15,7 @@ func main() {
 
 	exampleMap := map[string]string{
 		"countries": "countries.trevorblades.com/graphql",
+		"allFilms":  "swapi-graphql.netlify.app/.netlify/functions/index",
 	}
 
 	vert := vertex.NewVertex(exampleMap, schema, clients.FHTTP())

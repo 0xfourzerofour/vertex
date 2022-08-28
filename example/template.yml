@@ -14,8 +14,8 @@ Globals:
     Runtime: go1.x
     Environment:
       Variables:
-        SCHEMA_BUCKET: !Join ["-", ["master-schema", !Ref Stage]]
-        SUB_SCHEMA_BUCKET: !Join ["-", ["sub-schemas", !Ref Stage]]
+        SCHEMA_BUCKET: !Join ["-", ["test-schema", !Ref Stage]]
+        SUB_SCHEMA_BUCKET: !Join ["-", ["test-sub-schemas", !Ref Stage]]
 
 Resources:
   ProxyHandler:
@@ -34,9 +34,9 @@ Resources:
   MasterSchemaBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Join ["-", ["master-schema", !Ref Stage]]
+      BucketName: !Join ["-", ["test-schema", !Ref Stage]]
 
   SubSchemaBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Join ["-", ["sub-schemas", !Ref Stage]]
+      BucketName: !Join ["-", ["test-sub-schemas", !Ref Stage]]

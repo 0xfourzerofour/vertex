@@ -55,11 +55,17 @@ func (v *vertex) forward(ctx context.Context, originReq events.APIGatewayProxyRe
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentTypeBytes(headerContentTypeJson)
 
-	for key, header := range originReq.Headers {
-		req.Header.Add(key, header)
-	}
+	req.Header.Add("Accept", "application/json")
+
+	//TODO add config for allowed headers to be passed by proxy
+
+	// for key, header := range originReq.Headers {
+	// 	req.Header.Add(key, header)
+	// }
 
 	req.SetBodyRaw(body)
+
+	log.Print(string(req.Header.Header()))
 	resp := fasthttp.AcquireResponse()
 
 	err := v.client.DoTimeout(req, resp, reqTimeout)
@@ -84,6 +90,8 @@ func (v *vertex) forward(ctx context.Context, originReq events.APIGatewayProxyRe
 	}
 
 	bodyVal := resp.Body()
+
+	log.Print(string(bodyVal))
 
 	fasthttp.ReleaseResponse(resp)
 

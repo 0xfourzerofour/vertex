@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/joshpauline/vertex-cli/internal/vertex"
+	"github.com/joshpauline/vertex/internal/cli-tools"
 	"github.com/urfave/cli/v2"
 )
 
@@ -52,7 +52,7 @@ func main() {
 					url := cCtx.Value("url").(string)
 					name := cCtx.Value("name").(string)
 
-					err := vertex.GenerateVertex(schema, output, name, url)
+					err := cli_tools.GenerateVertex(schema, output, name, url)
 
 					if err != nil {
 						return err

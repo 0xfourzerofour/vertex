@@ -2,8 +2,8 @@ package main
 
 import (
 	_ "embed"
-	"govertex/internal/clients"
-	"govertex/pkg/vertex"
+	"github.com/joshpauline/vertex/internal/clients"
+	"github.com/joshpauline/vertex/pkg/vertex"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )

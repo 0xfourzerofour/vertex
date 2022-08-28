@@ -1,4 +1,4 @@
-module govertex
+module github.com/joshpauline/vertex
 
 go 1.18
 
@@ -7,7 +7,6 @@ require (
 	github.com/aws/aws-sdk-go v1.44.4
 	github.com/aws/aws-xray-sdk-go v1.7.0
 	github.com/graph-gophers/graphql-go v1.4.0
-	github.com/joshpauline/vertex-cli v0.1.2
 	github.com/urfave/cli/v2 v2.11.2
 	github.com/valyala/fasthttp v1.36.0
 	github.com/vektah/gqlparser v1.3.1

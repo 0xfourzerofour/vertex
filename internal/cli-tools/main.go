@@ -1,4 +1,4 @@
-package clitools
+package cli_tools
 
 import (
 	"encoding/json"

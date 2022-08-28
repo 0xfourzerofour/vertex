@@ -55,6 +55,31 @@ query vertex($id: ID!) {
 
 ```
 
+# Vertex CLI
+
+A CLI tool that generates a JSON file to be used with the Vertex Graphql Proxy
+
+The `generate` command accepts 4 flags
+
+ - --schema || -s
+ - --output || -o
+ - --name || -n
+ - --url || -u
+
+It will generate the following JSON file
+
+```
+{
+    "serviceName": "example-service-name",
+    "serviceUrl": "service.com/graphql",
+    "schema": "*** graphql schema definition",
+    "queryMap": {
+      "exampleQuery": "service.com/graphql"
+    }
+}
+
+```
+
 ## Exciting findings
 
  - requests can be parsed within 0.01-0.1ms which will only get faster after I implement request caching

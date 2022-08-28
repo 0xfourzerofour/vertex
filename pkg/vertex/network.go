@@ -1,30 +1,49 @@
-package persistance
+package vertex
 
 import (
 	"context"
 	"encoding/json"
-	"govertex/domain/proxy"
-	"govertex/domain/schemas"
 	"log"
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/valyala/fasthttp"
+
 	"golang.org/x/sync/errgroup"
 )
 
-type proxyImp struct {
-	proxyConn *fasthttp.Client
+type GQLResp struct {
+	Data  map[string]interface{} `json:"data,omitempty"`
+	Error *struct {
+		Message string `json:"message"`
+	} `json:"error,omitempty"`
 }
 
-func ProxyPersistance(proxyConn *fasthttp.Client) proxy.ProxyRepository {
-	return &proxyImp{
-		proxyConn,
+func (v *vertex) httpConnError(err error) (string, bool) {
+	errName := ""
+	known := false
+	if err == fasthttp.ErrTimeout {
+		errName = "timeout"
+		known = true
+	} else if err == fasthttp.ErrNoFreeConns {
+		errName = "conn_limit"
+		known = true
+	} else if err == fasthttp.ErrConnectionClosed {
+		errName = "conn_close"
+		known = true
+	} else {
+		errName = reflect.TypeOf(err).String()
+		if errName == "*net.OpError" {
+			errName = "timeout"
+			known = true
+		}
 	}
+	return errName, known
 }
 
-func (p *proxyImp) Forward(ctx context.Context, originReq events.APIGatewayProxyRequest, url string, body []byte) (*proxy.GQLResp, error) {
+func (v *vertex) forward(ctx context.Context, originReq events.APIGatewayProxyRequest, url string, body []byte) (*GQLResp, error) {
 
 	reqTimeout := 5 * time.Second
 
@@ -43,7 +62,7 @@ func (p *proxyImp) Forward(ctx context.Context, originReq events.APIGatewayProxy
 	req.SetBodyRaw(body)
 	resp := fasthttp.AcquireResponse()
 
-	err := p.proxyConn.DoTimeout(req, resp, reqTimeout)
+	err := v.client.DoTimeout(req, resp, reqTimeout)
 	fasthttp.ReleaseRequest(req)
 
 	if err == nil {
@@ -55,7 +74,7 @@ func (p *proxyImp) Forward(ctx context.Context, originReq events.APIGatewayProxy
 		}
 	} else {
 
-		errName, known := proxy.HttpConnError(err)
+		errName, known := v.httpConnError(err)
 		log.Print(errName)
 		if known {
 			log.Print(known)
@@ -68,7 +87,7 @@ func (p *proxyImp) Forward(ctx context.Context, originReq events.APIGatewayProxy
 
 	fasthttp.ReleaseResponse(resp)
 
-	resBody := proxy.GQLResp{}
+	resBody := GQLResp{}
 
 	err = json.Unmarshal(bodyVal, &resBody)
 
@@ -79,13 +98,13 @@ func (p *proxyImp) Forward(ctx context.Context, originReq events.APIGatewayProxy
 	return &resBody, nil
 }
 
-func (p *proxyImp) SendConcurrentRequests(ctx *fasthttp.RequestCtx, originReq events.APIGatewayProxyRequest, queries []*schemas.SubQuery) (*proxy.GQLResp, error) {
+func (v *vertex) sendConcurrentRequests(ctx context.Context, originReq events.APIGatewayProxyRequest, queries []*subQuery) (*GQLResp, error) {
 
 	g := errgroup.Group{}
 
 	d := make(map[string]interface{})
 
-	result := proxy.GQLResp{
+	result := GQLResp{
 		Data: d,
 	}
 
@@ -93,17 +112,7 @@ func (p *proxyImp) SendConcurrentRequests(ctx *fasthttp.RequestCtx, originReq ev
 
 		queryName := query.QueryName
 
-		log.Print(queryName)
-
-		if proxy, ok := service.ProxyMap.GetStringKey(query.QueryName); ok {
-
-			proxyStr := proxy.(string)
-
-			// if path, ok := service.ServiceMap.GetStringKey(query.QueryName); ok {
-
-			// 	proxyStr += path.(string)
-
-			// }
+		if proxy, ok := v.vertexMap[query.QueryName]; ok {
 
 			b, err := json.Marshal(query.Body)
 
@@ -113,7 +122,7 @@ func (p *proxyImp) SendConcurrentRequests(ctx *fasthttp.RequestCtx, originReq ev
 
 			g.Go(func() error {
 
-				postRes, err := p.Forward(ctx, originReq, proxyStr, b)
+				postRes, err := v.forward(ctx, originReq, proxy, b)
 
 				if err == nil {
 					result.Data[queryName] = postRes.Data[queryName]

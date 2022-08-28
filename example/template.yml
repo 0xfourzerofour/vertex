@@ -22,40 +22,14 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Timeout: 180
-      Handler: handlers/proxy
-      CodeUri: handlers/proxy
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-              - s3:GetObject
-              Resource: "*"   
+      Handler: handler
+      CodeUri: handler
       Events:
         HttpPost:
           Type: Api
           Properties:
             Path: '/graphql'
             Method: post
-
-  MergeSchemas:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 180
-      Handler: handlers/merge_schemas
-      CodeUri: handlers/merge_schemas
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-              - s3:*
-              Resource: "*"
-      Events:
-        SubSchemaUpdateEvent:
-          Type: S3
-          Properties:
-            Bucket: !Ref SubSchemaBucket
-            Events: s3:ObjectCreated:*
-
 
   MasterSchemaBucket:
     Type: AWS::S3::Bucket

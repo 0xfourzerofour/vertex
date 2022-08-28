@@ -1,0 +1,8 @@
+type Country {
+    code: String
+    name: String
+}
+
+type Query {
+    countries: [Country!]!
+}

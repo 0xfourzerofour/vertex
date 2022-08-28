@@ -1,34 +1,36 @@
-package graphql
+package vertex
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
-	"golang.org/x/oauth2"
-
-	"github.com/shurcooL/graphql"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/parser"
 )
 
-type HttpQuery struct {
+type httpQuery struct {
 	Query     string                 `json:"query"`
 	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
-type VariableDirectives struct {
+type variableDirectives struct {
 	Name       string
 	IsNullable bool
 }
 
-type SubQuery struct {
+type subQuery struct {
 	QueryName string `json:"queryName"`
 	Query     string `json:"query"`
 	Operation string `json:"operation"`
-	Body      HttpQuery
+	Body      httpQuery
+}
+
+type VertexData struct {
+	ServiceName string            `json:"serviceName"`
+	ServiceUrl  string            `json:"serviceUrl"`
+	Schema      string            `json:"schema"`
+	QueryMap    map[string]string `json:"queryMap"`
 }
 
 type IntroSpectionResult struct {
@@ -54,34 +56,13 @@ type IntroSpectionResult struct {
 	} `graphql:"__schema"`
 }
 
-func GetIntrospectionSchema(url, token string) (*IntroSpectionResult, error) {
+func (v *vertex) parseQueryBody(body string) ([]*subQuery, error) {
 
-	src := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	httpClient := oauth2.NewClient(context.Background(), src)
+	hq := httpQuery{}
 
-	client := graphql.NewClient(url, httpClient)
-
-	query := IntroSpectionResult{}
-
-	err := client.Query(context.Background(), &query, nil)
+	err := json.Unmarshal([]byte(body), &hq)
 
 	if err != nil {
-		return nil, err
-	}
-
-	return &query, nil
-}
-
-func ParseQueryBody(body *[]byte) ([]*SubQuery, error) {
-
-	hq := HttpQuery{}
-
-	err := json.Unmarshal(*body, &hq)
-
-	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
@@ -95,14 +76,14 @@ func ParseQueryBody(body *[]byte) ([]*SubQuery, error) {
 		return nil, err
 	}
 
-	queries := []*SubQuery{}
+	queries := []*subQuery{}
 
 	for _, operation := range qAst.Operations {
 
-		operationMap := make(map[string]*VariableDirectives)
+		operationMap := make(map[string]*variableDirectives)
 
 		for _, variableDef := range operation.VariableDefinitions {
-			operationMap[variableDef.Variable] = &VariableDirectives{
+			operationMap[variableDef.Variable] = &variableDirectives{
 				Name:       variableDef.Type.Name(),
 				IsNullable: variableDef.Type.NonNull,
 			}
@@ -147,12 +128,12 @@ func ParseQueryBody(body *[]byte) ([]*SubQuery, error) {
 					newBody = fmt.Sprintf(`%s %s(%s) { %s }`, operation.Operation, operation.Name, variableStr, lastQuery)
 				}
 
-				queryBody := HttpQuery{
+				queryBody := httpQuery{
 					Query:     newBody,
 					Variables: variables,
 				}
 
-				sub := SubQuery{
+				sub := subQuery{
 					Query:     lastQuery,
 					Operation: string(operation.Operation),
 					QueryName: field.Name,
@@ -198,12 +179,12 @@ func ParseQueryBody(body *[]byte) ([]*SubQuery, error) {
 
 				}
 
-				queryBody := HttpQuery{
+				queryBody := httpQuery{
 					Query:     newBody,
 					Variables: variables,
 				}
 
-				sub := SubQuery{
+				sub := subQuery{
 					Query:     previosQuery,
 					Operation: string(operation.Operation),
 					QueryName: prevField.Name,
@@ -220,4 +201,14 @@ func ParseQueryBody(body *[]byte) ([]*SubQuery, error) {
 
 	return queries, nil
 
+}
+
+func (v *vertex) getMasterIntrospection() ([]byte, error) {
+	byteData, err := v.schema.ToJSON()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return byteData, nil
 }

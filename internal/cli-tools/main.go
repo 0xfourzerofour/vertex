@@ -95,7 +95,9 @@ func generateMap(schemaString, serviceUrl string) (map[string]string, error) {
 
 	if schema.Query != nil {
 		for _, query := range schema.Query.Fields {
-			schemaMap[query.Name] = serviceUrl
+			if query.Name != "__schema" && query.Name != "__type" {
+				schemaMap[query.Name] = serviceUrl
+			}
 		}
 	}
 

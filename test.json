@@ -1,0 +1,8 @@
+{
+	"serviceName": "example",
+	"serviceUrl": "test.com",
+	"schema": "type Country {\n    code: String\n    name: String\n}\n\ntype Query {\n    countries: [Country!]!\n}\n",
+	"queryMap": {
+		"countries": "test.com"
+	}
+}
